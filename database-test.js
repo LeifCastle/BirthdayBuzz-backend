@@ -1,30 +1,33 @@
 // get access to environment variables
-require('dotenv').config();
-const mongoose = require('mongoose');
-const { faker } = require('@faker-js/faker');
-const { createRandomUser } = require('./utils');
+require("dotenv").config();
+const mongoose = require("mongoose");
 
 // import our models
-const { User, Post, Order, Product } = require('./models');
+const { User } = require("./models");
 
-console.log('mongo uri =>', process.env.MONGO_URI);
+console.log("mongo uri =>", process.env.MONGO_URI);
 // connect to the database
 mongoose.connect(process.env.MONGO_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
 });
 
 // create connection object
 const db = mongoose.connection;
 
 // once the database opens
-db.once('open', () => {
-    console.log('Connected to MongoDB Database: Mongoose App at HOST: ', db.host, 'PORT: ', db.port);
+db.once("open", () => {
+  console.log(
+    "Connected to MongoDB Database: Mongoose App at HOST: ",
+    db.host,
+    "PORT: ",
+    db.port
+  );
 });
 
 // if there is a database error
-db.on('error', (err) => {
-    console.log(`Database error: `, err);
+db.on("error", (err) => {
+  console.log(`Database error: `, err);
 });
 
 // create a user and save to the DB
@@ -80,7 +83,7 @@ db.on('error', (err) => {
 //         // add a comment to the post
 //         const newComment = { username: 'jackrecher', header: 'nice', body: 'Where at?' }
 //         post.comments.push(newComment);
-//         // save the post 
+//         // save the post
 //         post.save()
 //         .then(result => {
 //             console.log('After comment is saved', result);
@@ -91,7 +94,6 @@ db.on('error', (err) => {
 //     }
 // })
 // .catch(error => console.log('error', error));
-
 
 // Updating a comment inside of a post
 // Post.findById('6493d27d903a15a0c1662c3e')
@@ -118,7 +120,7 @@ db.on('error', (err) => {
 //     if (post) {
 //         // find the comment by the id and remove
 //         post.comments.id('6493d5195db1f2b5fe7392b6').deleteOne()
-        
+
 //         post.save()
 //         .then(result => {
 //             console.log('removed comment', result);
@@ -131,31 +133,31 @@ db.on('error', (err) => {
 // .catch(error => console.log('error', error));
 
 // create a new order
-Order.create({
-    buyer: 'Issac',
-    trackingNumber: '384939xciosd02392',
-})
-.then(order => {
-    console.log('new order', order);
-    // add products to order
-    order.products.push('649747b45845267e021fedce', '649747b45845267e021fedc9');
-    // save the order
-    order.save()
-    .then(updatedOrder => {
-        console.log('order updated', updatedOrder);
-        // print the actual product inside order
-        updatedOrder.populate('products')
-        .then(result => {
-            console.log('order with products', result);
-        })
-        .catch(error => {
-            console.log(error);
-        })
-    })
-    .catch(error => {
-        console.log(error);
-    })
-})
-.catch(error => {
-    console.log(error);
-})
+// Order.create({
+//     buyer: 'Issac',
+//     trackingNumber: '384939xciosd02392',
+// })
+// .then(order => {
+//     console.log('new order', order);
+//     // add products to order
+//     order.products.push('649747b45845267e021fedce', '649747b45845267e021fedc9');
+//     // save the order
+//     order.save()
+//     .then(updatedOrder => {
+//         console.log('order updated', updatedOrder);
+//         // print the actual product inside order
+//         updatedOrder.populate('products')
+//         .then(result => {
+//             console.log('order with products', result);
+//         })
+//         .catch(error => {
+//             console.log(error);
+//         })
+//     })
+//     .catch(error => {
+//         console.log(error);
+//     })
+// })
+// .catch(error => {
+//     console.log(error);
+// })
