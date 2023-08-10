@@ -31,8 +31,6 @@ router.post("/login", async (req, res) => {
         phone: foundUser.phone,
         password: foundUser.password,
         public: foundUser.public,
-        buzzList: foundUser.buzzList,
-        public_buzzList_users: foundUser.public_buzzList,
       };
       jwt.sign(payload, JWT_SECRET, { expiresIn: 3600 }, (err, token) => {
         if (err) {
@@ -59,7 +57,7 @@ router.post("/login", async (req, res) => {
 router.post("/signup", (req, res) => {
   console.log("POST to /signup");
   console.log("Register Request: ", req.body);
-  User.findOne({ username: req.body.username })
+  User.findOne({ email: req.body.email })
     .then((user) => {
       // If a user is already registered under that username
       if (user) {
@@ -69,13 +67,11 @@ router.post("/signup", (req, res) => {
         const newUser = new User({
           firstName: req.body.firstName,
           lastName: req.body.lastName,
-          birthday: req.body.email,
-          email: req.body.jobTitle,
+          birthday: req.body.birthday,
+          email: req.body.email,
           phone: new Date(),
           password: req.body.password,
           public: req.body.public,
-          buzzList: [],
-          public_buzzList_users: [],
         });
 
         // Salt and hash the password - before saving the user
