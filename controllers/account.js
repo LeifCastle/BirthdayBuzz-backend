@@ -7,175 +7,61 @@ const jwt = require("jsonwebtoken");
 const passport = require("passport");
 const { JWT_SECRET } = process.env;
 
-const Account = require("../models");
+// Import the User model
+const User = require("../models");
 
 // Profile Fetch
-router.get(
-  "/profile",
-  passport.authenticate("jwt", { session: false }),
-  async (req, res) => {
-    try {
-      const user = await Account.findById(req.user.id).select("-password");
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
+router.get('/', passport.authenticate('jwt', { session: false }), (req, res) => {
+    console.log('====> inside /profile');
+    console.log(req.body);
+    console.log('====> user')
+    console.log(req.user);
 
-      // Sort the buzzlist based on upcoming birthdays that haven't occurred yet
-      const currentDate = new Date();
-      user.publicBuzzlist = user.publicBuzzlist
-        .filter((birthday) => new Date(birthday.date) > currentDate)
-        .sort((a, b) => new Date(a.date) - new Date(b.date));
-
-      res.status(200).json(user);
-    } catch (error) {
-      res.status(500).json({ message: error.message });
-    }
-  }
-);
-
-// Signup Route
-router.post("/signup", (req, res) => {
-  // POST - adding the new user to the database
-  console.log("===> Inside of /signup");
-  console.log("===> /register -> req.body", req.body);
-
-  User.findOne({ email: req.body.email })
-    .then((user) => {
-      // if email already exists, a user will come back
-      if (user) {
-        // send a 400 response
-        return res.status(400).json({ message: "Email already exists" });
-      } else {
-        // Create a new user
-        const newUser = new User({
-          firstName: req.body.firstName,
-          lastName: req.body.lastName,
-          email: req.body.email,
-          jobTitle: req.body.jobTitle,
-          birthdate: new Date(),
-          "address.streetAddress": req.body.streetAddress,
-          "address.city": req.body.city,
-          "address.state": req.body.state,
-          "address.zipCode": req.body.zipCode,
-          number: req.body.number,
-          password: req.body.password,
-        });
-
-        // Salt and hash the password - before saving the user
-        bcrypt.genSalt(10, (err, salt) => {
-          if (err) throw Error;
-
-          bcrypt.hash(newUser.password, salt, (err, hash) => {
-            if (err) console.log("==> Error inside of hash", err);
-            // Change the password in newUser to the hash
-            newUser.password = hash;
-            newUser
-              .save()
-              .then((createdUser) => {
-                // remove password from being returned inside of response, still in DB
-                if (createdUser.password) {
-                  createdUser.password = "..."; // hide the password
-                  res.json({ user: createdUser });
-                }
-              })
-              .catch((err) => {
-                console.log("error with creating new user", err);
-                res.json({ message: "Error occured... Please try again." });
-              });
-          });
-        });
-      }
-    })
-    .catch((err) => {
-      console.log("Error finding user", err);
-      res.json({ message: "Error occured... Please try again." });
+    // Extract only the necessary fields
+    const { 
+      id, firstName, lastName, email, birthday, phone, public, buzzList, public_buzzList_users 
+    } = req.user;
+  
+    // Send the extracted data
+    res.json({ 
+      id, firstName, lastName, email, birthday, phone, public, buzzList, public_buzzList_users 
     });
 });
 
-// Login Route
-router.post("/login", async (req, res) => {
-  // POST - finding a user and returning the user
-  console.log("===> Inside of /login");
-  console.log("===> /login -> req.body", req.body);
 
-  const foundUser = await User.findOne({ email: req.body.email });
 
-  if (foundUser) {
-    // user is in the DB
-    let isMatch = await bcrypt.compareSync(
-      req.body.password,
-      foundUser.password
-    );
-    console.log("Does the passwords match?", isMatch);
-    if (isMatch) {
-      // if user match, then we want to send a JSON Web Token
-      // Create a token payload
-      // add an expiredToken = Date.now()
-      // save the user
-      const payload = {
-        id: foundUser.id,
-        email: foundUser.email,
-        firstName: foundUser.firstName,
-        lastName: foundUser.lastName,
-        address: foundUser.address,
-        birthdate: foundUser.birthdate,
-        jobTitle: foundUser.jobTitle,
-        number: foundUser.number,
-      };
-
-      jwt.sign(payload, JWT_SECRET, { expiresIn: 3600 }, (err, token) => {
-        if (err) {
-          res
-            .status(400)
-            .json({ message: "Session has endedd, please log in again" });
-        }
-        const legit = jwt.verify(token, JWT_SECRET, { expiresIn: 60 });
-        console.log("===> legit", legit);
-        delete legit.password; // remove before showing response
-        res.json({ success: true, token: `Bearer ${token}`, userData: legit });
-      });
-    } else {
-      return res
-        .status(400)
-        .json({ message: "Email or Password is incorrect" });
+router.put('/:id', (req, res) => {
+    const updateQuery = {}
+    // check firstName
+    if (req.body.firstName) {
+        updateQuery.firstName = req.body.firstName
     }
-  } else {
-    return res.status(400).json({ message: "User not found" });
-  }
+    // check lastName
+    if (req.body.lastName) {
+        updateQuery.lastName = req.body.lastName
+    }
+    // check birthday
+    if (req.body.birthday) {
+        updateQuery.birthday = req.body.birthday
+    }
+    // check email
+    if (req.body.email) {
+        updateQuery.email = req.body.email
+    }
+    // check phone
+    if (req.body.phone) {
+        updateQuery.phone = req.body.phone
+    }
+
+    User.findByIdAndUpdate(req.params.id, {$set: updateQuery }, {new: true})
+    .then((user) => {
+        return res.json({ message: `${user.email} was updated`, user: user});
+    })
+    .catch((error) => {
+        console.log('error inside PUT /account/:id', error);
+        return res.json({ message: 'error occured, please try again.' });
+    });
 });
 
-// Profile Update
-router.put(
-  "/account",
-  passport.authenticate("jwt", { session: false }),
-  async (req, res) => {
-    try {
-      const updatedUser = await Account.findByIdAndUpdate(
-        req.user.id,
-        req.body,
-        { new: true }
-      );
-      res.status(200).json(updatedUser);
-    } catch (error) {
-      res.status(500).json({ message: error.message });
-    }
-  }
-);
-
-// Add a new birthday to the buzzlist
-router.post(
-  "/account/buzzlist",
-  passport.authenticate("jwt", { session: false }),
-  async (req, res) => {
-    try {
-      const user = await Account.findById(req.user.id);
-      user.publicBuzzlist.push(req.body);
-      await user.save();
-      res.status(200).send(user.publicBuzzlist);
-    } catch (error) {
-      res.status(500).send(error.message);
-    }
-  }
-);
 
 module.exports = router;
