@@ -12,10 +12,15 @@ const Account = require('../models');
 // Profile Fetch
 router.get('/profile', passport.authenticate('jwt', { session: false }), async (req, res) => {
     try {
-        const user = await Account.findById(req.user.id).select('-password'); // Removethe password from the returned data.
+        const user = await Account.findById(req.user.id).select('-password');
         if (!user) {
             return res.status(404).json({ message: "User not found" });
         }
+
+        // Sort the buzzlist based on upcoming birthdays that haven't occurred yet
+        const currentDate = new Date();
+        user.publicBuzzlist = user.publicBuzzlist.filter(birthday => new Date(birthday.date) > currentDate).sort((a, b) => new Date(a.date) - new Date(b.date));
+        
         res.status(200).json(user);
     } catch (error) {
         res.status(500).json({ message: error.message });
@@ -143,31 +148,6 @@ router.post('/account/buzzlist', passport.authenticate('jwt', { session: false }
         user.publicBuzzlist.push(req.body);
         await user.save();
         res.status(200).send(user.publicBuzzlist);
-    } catch (error) {
-        res.status(500).send(error.message);
-    }
-});
-
-// Update an existing birthday in the buzzlist
-router.put('/account/buzzlist/:id', passport.authenticate('jwt', { session: false }), async (req, res) => {
-    try {
-        const user = await Account.findById(req.user.id);
-        const entry = user.publicBuzzlist.id(req.params.id);
-        Object.assign(entry, req.body);
-        await user.save();
-        res.status(200).send(entry);
-    } catch (error) {
-        res.status(500).send(error.message);
-    }
-});
-
-// Delete an entry from the buzzlist
-router.delete('/account/buzzlist/:id', passport.authenticate('jwt', { session: false }), async (req, res) => {
-    try {
-        const user = await Account.findById(req.user.id);
-        user.publicBuzzlist.id(req.params.id).remove();
-        await user.save();
-        res.status(200).send({ message: "Entry removed from buzzlist" });
     } catch (error) {
         res.status(500).send(error.message);
     }
