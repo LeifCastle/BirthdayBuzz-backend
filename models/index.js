@@ -18,9 +18,9 @@ const db = mongoose.connection;
 // once the database opens
 db.once("open", () => {
   console.log(
-    "Connected to MongoDB Database: Mongoose App at HOST: ",
+    "Connected to MongoDB Database: Mongoose App at HOST:",
     db.host,
-    "PORT: ",
+    "PORT:",
     db.port
   );
 });

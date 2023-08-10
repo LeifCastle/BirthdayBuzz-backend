@@ -23,7 +23,7 @@ const userSchema = new mongoose.Schema(
     email: String,
     phone: { type: String, required: true, unique: true },
     password: { type: String, required: true },
-    public: req.body.public,
+    public: Boolean,
     buzzList: buzzListSchema,
     public_buzzList_users: Array,
   },
