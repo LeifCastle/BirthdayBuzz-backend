@@ -15,7 +15,8 @@ app.get("/", (req, res) => {
   return res.json({ message: "Welcome to my API" });
 });
 
-app.use("/users", require("./controllers/users"));
+app.use("/auth", require("./controllers/auth"));
+app.use("/account", require("./controllers/account"));
 
 const PORT = process.env.PORT || 8000;
 app.listen(PORT, () => {
