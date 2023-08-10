@@ -1,24 +1,37 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
-// create the user schema
-const userSchema = new mongoose.Schema({
+// BuzzList schema (embedded document)
+const buzzListSchema = new mongoose.Schema(
+  {
+    name: String,
+    birthday: String,
+    relation: String,
+    reminderTimeFrame: Array,
+    delivery_system: String,
+    message: String,
+    public: Boolean,
+  },
+  { timestamps: true }
+);
+
+// User schema
+const userSchema = new mongoose.Schema(
+  {
     firstName: String,
     lastName: String,
-    email: { type: String, required: true, unique: true },
-    jobTitle: String,
-    birthdate: Date,
+    birthday: String,
+    email: String,
+    phone: { type: String, required: true, unique: true },
     password: { type: String, required: true },
-    address: {
-        streetAddress: String,
-        city: String,
-        state: String,
-        zipCode: Number
-    },
-    number: String
-}, { timestamps: true });
+    public: req.body.public,
+    buzzList: buzzListSchema,
+    public_buzzList_users: Array,
+  },
+  { timestamps: true }
+);
 
-// create model
-const User = mongoose.model('User', userSchema);
+// Create model
+const User = mongoose.model("User", userSchema);
 
-// export the model to be used
+// Export the model
 module.exports = User;

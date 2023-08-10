@@ -32,7 +32,7 @@ router.post("/login", async (req, res) => {
         password: foundUser.password,
         public: foundUser.public,
         buzzList: foundUser.buzzList,
-        public_buzzList: foundUser.public_buzzList,
+        public_buzzList_users: foundUser.public_buzzList,
       };
       jwt.sign(payload, JWT_SECRET, { expiresIn: 3600 }, (err, token) => {
         if (err) {
@@ -75,7 +75,7 @@ router.post("/signup", (req, res) => {
           password: req.body.password,
           public: req.body.public,
           buzzList: [],
-          public_buzzList: [],
+          public_buzzList_users: [],
         });
 
         // Salt and hash the password - before saving the user
