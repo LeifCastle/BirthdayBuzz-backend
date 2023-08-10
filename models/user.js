@@ -24,7 +24,7 @@ const userSchema = new mongoose.Schema(
     phone: { type: String, required: true, unique: true },
     password: { type: String, required: true },
     public: Boolean,
-    buzzList: buzzListSchema,
+    buzzList: [buzzListSchema],
     public_buzzList_users: Array,
   },
   { timestamps: true }
