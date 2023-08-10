@@ -8,7 +8,7 @@ const passport = require("passport");
 const { JWT_SECRET } = process.env;
 
 // Import the User model
-const User = require("../models");
+const { User } = require("../models");
 
 // Profile Fetch
 router.get('/', passport.authenticate('jwt', { session: false }), (req, res) => {
