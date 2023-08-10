@@ -26,8 +26,8 @@ router.post("/login", async (req, res) => {
         id: foundUser.id,
         firstName: foundUser.firstName,
         lastName: foundUser.lastName,
-        birthday: foundUser.email,
-        email: foundUser.jobTitle,
+        birthday: foundUser.birthday,
+        email: foundUser.email,
         phone: foundUser.phone,
         password: foundUser.password,
         public: foundUser.public,
@@ -69,9 +69,7 @@ router.post("/signup", (req, res) => {
           lastName: req.body.lastName,
           birthday: req.body.birthday,
           email: req.body.email,
-          phone: new Date(),
           password: req.body.password,
-          public: req.body.public,
         });
 
         // Salt and hash the password - before saving the user
