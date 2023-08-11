@@ -12,9 +12,10 @@ app.use(express.json());
 app.use(cors());
 app.use(passport.initialize());
 
+//----GET---- get all people from you Buzz List
 app.get(
   "/buzzlist/:email",
-  // passport.authenticate("jwt", { session: true }),
+  //passport.authenticate("jwt", { session: true }),  this is causing user to continually be rerouted to login page after logging in
   (req, res) => {
     console.log("Email", req.params.email);
     User.findOne({ email: req.params.email })
@@ -27,6 +28,34 @@ app.get(
       .catch((error) => {
         console.log(`Error finding user: ${error}`);
         return res.json({ Error: "User not found" });
+      });
+  }
+);
+
+//----POST---- add a person to your Buzz List
+app.post(
+  "/buzzlist/new",
+  //passport.authenticate("jwt", { session: true }),  this is causing user to continually be rerouted to login page after logging in
+  (req, res) => {
+    User.findOne({ email: req.body.user.email })
+      .then((foundUser) => {
+        console.log(`Found user: ${foundUser.email}`);
+        console.log("New Buzz Request: ", req.body.newPerson);
+        foundUser.buzzList.push(req.body.newPerson); //Update to just splice out email rather then sending it in two different objects (will also have to chang how data is being sent)
+        foundUser
+          .save()
+          .then((updatedUser) => {
+            console.log("Updated Buzzlist: ", updatedUser.buzzList);
+            return res.json({ success: true });
+          })
+          .catch((error) => {
+            console.log(`Error saving new Buzz List entry: ${error}`);
+            return res.json({ success: false });
+          });
+      })
+      .catch((error) => {
+        console.log(`Error finding user: ${error}`);
+        return res.json({ success: false });
       });
   }
 );
