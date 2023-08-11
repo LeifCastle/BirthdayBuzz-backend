@@ -12,7 +12,15 @@ app.use(express.json());
 app.use(cors());
 app.use(passport.initialize());
 
-//----GET---- get all people from you Buzz List
+//----GET---- get all users on the app
+app.get("/users", (req, res) => {
+  User.find().then((allUsers) => {
+    console.log("All Users: ", allUsers);
+    res.json(allUsers);
+  });
+});
+
+//----GET---- get all people from your Buzz List
 app.get(
   "/buzzlist/:email",
   //passport.authenticate("jwt", { session: true }),  this is causing user to continually be rerouted to login page after logging in
