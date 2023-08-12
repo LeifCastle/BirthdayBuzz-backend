@@ -61,7 +61,7 @@ app.post(
 );
 
 app.use("/auth", require("./controllers/auth"));
-//app.use("/account", require("./controllers/account"));
+app.use("/account", require("./controllers/account"));
 
 const PORT = process.env.PORT || 8000;
 app.listen(PORT, () => {
