@@ -69,6 +69,7 @@ router.post("/signup", (req, res) => {
           lastName: req.body.lastName,
           birthday: req.body.birthday,
           email: req.body.email,
+          phone: req.body.phone,
           password: req.body.password,
         });
 
