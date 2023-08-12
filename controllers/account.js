@@ -74,5 +74,23 @@ router.delete('/:id', (req, res) => {
     });
 });
 
-
+router.get('/searchUsers', async (req, res) => {
+    const searchQuery = req.query.query;
+  
+    if (!searchQuery) {
+      return res.status(400).json({ error: 'Query parameter is required.' });
+    }
+  
+    try {
+      const users = await User.find({ 
+        firstName: new RegExp(searchQuery, 'i') 
+      });
+  
+      res.json(users);
+    } catch (error) {
+      console.error('Error searching users:', error);
+      res.status(500).json({ error: 'Internal Server Error' });
+    }
+  });
+  
 module.exports = router;
