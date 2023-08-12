@@ -63,5 +63,16 @@ router.put('/:id', (req, res) => {
     });
 });
 
+router.delete('/:id', (req, res) => {
+    User.findByIdAndDelete(req.params.id)
+    .then((user) => {
+        return res.json({ message: `${user.email} was deleted`});
+    })
+    .catch((error) => {
+        console.log('error inside DELETE /account/:id', error);
+        return res.json({ message: 'error occured, please try again.' });
+    });
+});
+
 
 module.exports = router;
