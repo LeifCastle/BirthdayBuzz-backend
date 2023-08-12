@@ -10,6 +10,16 @@ const { JWT_SECRET } = process.env;
 // import the User model
 const { User } = require("../models");
 
+// Return all users
+router.get('/users', async (req, res) => {
+  try {
+      const users = await User.find({});
+      res.json(users);
+  } catch (err) {
+      res.status(500).json({ message: 'Server Error' });
+  }
+});
+
 // POST - finding a user and returning the user
 router.post("/login", async (req, res) => {
   console.log("POST to /login");
