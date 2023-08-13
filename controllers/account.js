@@ -76,6 +76,7 @@ router.delete('/:id', (req, res) => {
 
 router.get('/searchUsers', async (req, res) => {
     const searchQuery = req.query.query;
+    console.log('searchQuery', searchQuery)
   
     if (!searchQuery) {
       return res.status(400).json({ error: 'Query parameter is required.' });
@@ -92,5 +93,51 @@ router.get('/searchUsers', async (req, res) => {
       res.status(500).json({ error: 'Internal Server Error' });
     }
   });
+
+  exports.addToBuzzlist = async (req, res) => {
+    const { userIdToAdd, relation, reminderTimeFrame, delivery_system, message, public } = req.body;
+
+    // Check if all required details are present
+    if (!userIdToAdd) {
+        return res.status(400).json({ success: false, message: "Invalid user data provided." });
+    }
+
+    try {
+        // Fetch the user whose BuzzList will be updated
+        const user = await User.findById(req.user._id); // Assuming req.user._id contains the logged-in user's ID, which should be set by your authentication middleware
+
+        if (!user) {
+            return res.status(404).json({ success: false, message: "Logged-in user not found." });
+        }
+
+        // Fetch the user data that will be added to the BuzzList
+        const userToAdd = await User.findById(userIdToAdd);
+
+        if (!userToAdd) {
+            return res.status(404).json({ success: false, message: "User to add not found." });
+        }
+
+        // Create the BuzzList entry
+        const buzzListEntry = {
+            name: `${userToAdd.firstName} ${userToAdd.lastName}`,
+            birthday: userToAdd.birthday,
+            relation,
+            reminderTimeFrame,
+            delivery_system,
+            message,
+            public
+        };
+
+        // Add to the user's BuzzList
+        user.buzzList.push(buzzListEntry);
+        await user.save();
+
+        res.json({ success: true, message: "User added to the BuzzList successfully.", buzzList: user.buzzList });
+
+    } catch (error) {
+        console.error(`Error in /addToBuzzlist: ${error.message}`);
+        res.status(500).json({ success: false, message: "Server Error." });
+    }
+};
   
 module.exports = router;
