@@ -10,8 +10,6 @@ const accountSid = process.env.TWILIO_ACCOUNT_SID;
 const authToken = process.env.TWILIO_AUTH_TOKEN;
 const client = require("twilio")(accountSid, authToken);
 
-let verification_sent;
-
 // import the User model
 const { User } = require("../models");
 
@@ -26,32 +24,48 @@ router.get("/users", async (req, res) => {
 });
 
 router.post("/verify", async (req, res) => {
-  //Add checking if account already exists
-  client.verify.v2
-    .services("VA803e2bb4b23d674b2b94f8da25b9f805")
-    .verifications.create({
-      channelConfiguration: {
-        template_id: "d-b4e407f4b23444378675cb13ad6f3231",
-        from: "birthday.buzzx@gmail.com",
-        from_name: "Birthday Buzz",
-      },
-      to: req.body.email.toString(),
-      channel: "email",
-    })
-    .then((verification) => {
-      console.log("Verification email sent to: ", req.body.email);
-      verification_sent = verification.sid;
-      res.json({
-        message: `Verification email sent to: ${req.body.email}`,
-      });
+  User.findOne({ email: req.body.email.toString() })
+    .then((foundUser) => {
+      if (foundUser) {
+        console.log(
+          `Error, a user with the email ${foundUser.email} already exists`
+        );
+        res.json({
+          message: `Error, a user with the email ${foundUser.email} already exists`,
+          result: false,
+        });
+      } else {
+        client.verify.v2
+          .services("VA803e2bb4b23d674b2b94f8da25b9f805")
+          .verifications.create({
+            channelConfiguration: {
+              template_id: "d-b4e407f4b23444378675cb13ad6f3231",
+              from: "birthday.buzzx@gmail.com",
+              from_name: "Birthday Buzz",
+            },
+            to: req.body.email.toString(),
+            channel: "email",
+          })
+          .then(() => {
+            console.log("Verification email sent to: ", req.body.email);
+            res.json({
+              message: `Verification email sent to: ${req.body.email}`,
+              result: true,
+            });
+          })
+          .catch((error) => {
+            console.log(`Error: ${error}`);
+            res.json({ message: `Error: verification not sent`, result: true });
+          });
+      }
     })
     .catch((error) => {
-      console.log(`Error: ${error}`);
-      res.json({ message: `Error: verification not sent` });
+      console.log(`Error checking for user: ${error}`);
     });
 });
 
 router.get("/checkVerify/:email/:code", async (req, res) => {
+  console.log(`Code: ${req.params.code.toString()}`);
   client.verify.v2
     .services("VA803e2bb4b23d674b2b94f8da25b9f805")
     .verificationChecks.create({
@@ -60,10 +74,8 @@ router.get("/checkVerify/:email/:code", async (req, res) => {
     })
     .then((verification_check) => {
       console.log(`Verification SID check for: ${req.params.email}`);
-      console.log(
-        `Checking match ---> Sent: ${verification_sent} Recieved: ${verification_check.sid}`
-      );
-      if (verification_check.sid === verification_sent) {
+      console.log(`Match is valid? ${verification_check.valid}`);
+      if (verification_check.valid) {
         res.json({
           message: `Verification SID for: ${req.params.email} is valid`,
           result: true,
