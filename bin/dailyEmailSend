@@ -14,7 +14,9 @@ function getUsers() {
       allUsers.forEach((user) => {
         console.log(`In User: ${user.firstName} ${user.lastName}`);
         user.buzzList.forEach((person) => {
-          if (person.birthday.slice(0, -5) === today) {
+          let endSlice = person.birthday.slice(0, -5);
+          let beginSlice = endSlice.slice(1);
+          if (beginSlice === today) {
             console.log(`It's ${person.name}'s birthday!`);
             console.log(person.reminderTimeFrame);
             sendScheduledEmail(user.email, user.firstName, person.message); //Need to also pass user time of day sending preference as a parameter
