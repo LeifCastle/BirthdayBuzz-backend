@@ -1,0 +1,55 @@
+#! /app/bin/node
+const dotenv = require("dotenv");
+dotenv.config({ path: "../.env" });
+const sgMail = require("@sendgrid/mail");
+const { User } = require("../models");
+
+sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+
+function getUsers() {
+  const today = new Date().toLocaleDateString().slice(0, -5);
+  console.log("Current Date: ", today);
+  User.find()
+    .then((allUsers) => {
+      allUsers.forEach((user) => {
+        console.log(`In User: ${user.firstName} ${user.lastName}`);
+        user.buzzList.forEach((person) => {
+          if (person.birthday.slice(0, -5) === today) {
+            console.log(`It's ${person.name}'s birthday!`);
+            console.log(person.reminderTimeFrame);
+            sendScheduledEmail(user.email, user.firstName, person.message); //Need to also pass user time of day sending preference as a parameter
+          }
+        });
+      });
+    })
+    .catch((error) => {
+      console.log("Error finding all users: ", error);
+    });
+}
+
+async function sendScheduledEmail(address, name, message) {
+  const data = {
+    from: {
+      email: "birthday.buzzx@gmail.com",
+      name: "Birthday Buzz",
+    },
+    to: [
+      {
+        email: address,
+        name: name,
+      },
+    ],
+    subject: "Birthday Reminder!", //Future Feature: Let user customize this
+    text: message,
+    //send_at: 1617260400,
+  };
+
+  const response = await sgMail.send(data);
+  if (response[0].statusCode === 202) {
+    console.log("Email scheduled successfully!");
+  } else {
+    console.log("Error --> Status Code: ", response[0].statusCode);
+  }
+}
+
+getUsers();

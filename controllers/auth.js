@@ -4,20 +4,83 @@ const express = require("express");
 const router = express.Router();
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-const passport = require("passport");
 const { JWT_SECRET } = process.env;
+
+const accountSid = process.env.TWILIO_ACCOUNT_SID;
+const authToken = process.env.TWILIO_AUTH_TOKEN;
+const client = require("twilio")(accountSid, authToken);
+
+let verification_sent;
 
 // import the User model
 const { User } = require("../models");
 
 // Return all users
-router.get('/users', async (req, res) => {
+router.get("/users", async (req, res) => {
   try {
-      const users = await User.find({});
-      res.json(users);
+    const users = await User.find({});
+    res.json(users);
   } catch (err) {
-      res.status(500).json({ message: 'Server Error' });
+    res.status(500).json({ message: "Server Error" });
   }
+});
+
+router.post("/verify", async (req, res) => {
+  //Add checking if account already exists
+  client.verify.v2
+    .services("VA803e2bb4b23d674b2b94f8da25b9f805")
+    .verifications.create({
+      channelConfiguration: {
+        template_id: "d-b4e407f4b23444378675cb13ad6f3231",
+        from: "birthday.buzzx@gmail.com",
+        from_name: "Birthday Buzz",
+      },
+      to: req.body.email.toString(),
+      channel: "email",
+    })
+    .then((verification) => {
+      console.log("Verification email sent to: ", req.body.email);
+      verification_sent = verification.sid;
+      res.json({
+        message: `Verification email sent to: ${req.body.email}`,
+      });
+    })
+    .catch((error) => {
+      console.log(`Error: ${error}`);
+      res.json({ message: `Error: verification not sent` });
+    });
+});
+
+router.get("/checkVerify/:email/:code", async (req, res) => {
+  client.verify.v2
+    .services("VA803e2bb4b23d674b2b94f8da25b9f805")
+    .verificationChecks.create({
+      to: req.params.email.toString(),
+      code: req.params.code.toString(),
+    })
+    .then((verification_check) => {
+      console.log(`Verification SID check for: ${req.params.email}`);
+      console.log(
+        `Checking match ---> Sent: ${verification_sent} Recieved: ${verification_check.sid}`
+      );
+      if (verification_check.sid === verification_sent) {
+        res.json({
+          message: `Verification SID for: ${req.params.email} is valid`,
+          result: true,
+        });
+      } else {
+        res.json({
+          message: `Verification SID for: ${req.params.email} is invalid`,
+          result: false,
+        });
+      }
+    })
+    .catch((error) => {
+      console.log(`Invalid code: ${error}`);
+      res.json({
+        message: "Invalid code:",
+      });
+    });
 });
 
 // POST - finding a user and returning the user
