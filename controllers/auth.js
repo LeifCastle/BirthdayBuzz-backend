@@ -36,7 +36,7 @@ router.post("/verify", async (req, res) => {
         });
       } else {
         client.verify.v2
-          .services("VA803e2bb4b23d674b2b94f8da25b9f805")
+          .services(process.env.TWILIO_SERVICE)
           .verifications.create({
             channelConfiguration: {
               template_id: "d-b4e407f4b23444378675cb13ad6f3231",
@@ -67,7 +67,7 @@ router.post("/verify", async (req, res) => {
 router.get("/checkVerify/:email/:code", async (req, res) => {
   console.log(`Code: ${req.params.code.toString()}`);
   client.verify.v2
-    .services("VA803e2bb4b23d674b2b94f8da25b9f805")
+    .services(process.env.TWILIO_SERVICE)
     .verificationChecks.create({
       to: req.params.email.toString(),
       code: req.params.code.toString(),
