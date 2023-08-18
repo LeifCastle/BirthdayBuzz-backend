@@ -4,7 +4,7 @@
 
 # **About**
 
-Never forget another birthday! Birthday Buzz is a MERN stack application that sends you email reminders when it's someone's birthday. Simply add your friends and family to your "buzz list" and we'll automatically send you a customized reminder when they're brithday is coming up or on the day of.
+Never forget another birthday! Birthday Buzz is a MERN stack application that sends you email reminders when it's someone's birthday. Simply add your friends and family to your "buzz list" and we'll automatically send you a customized reminder when they're birthday is coming up or on the day of.
 
 ### Features
 
@@ -29,7 +29,7 @@ Never forget another birthday! Birthday Buzz is a MERN stack application that se
 
 # Deployment
 
-- Frontend deployed online at [BirthdayBuzz](www.birthdaybuz.net)
+- Frontend deployed online at [BirthdayBuzz](http://www.birthdaybuz.net)
 - Backend deployed on [Heroku](https://birthday-buzz-backend-85f63d7d1452.herokuapp.com/)
 - Frontend Github Repo [Github](https://github.com/LeifCastle/BirthdayBuzz-frontend)
 - Backend Github Repo [Github](https://github.com/LeifCastle/BirthdayBuzz-backend)
@@ -111,6 +111,19 @@ npm run dev
 - Set up a recurring engine to run `node bin/sendDailyEmail.js` on the backend server.
 - The deployed version of Birthday Buzz uses `Heroku Scheduler` for this purpose.
 
+### Routes
+
+- **/** - CRUD operations for a user's Buzz List
+- **/account** - CRUD operations for viewing user account details and finding other users
+- **/auth** - User management routes (authentication, registration, login, etc.)
+
+### Project Structure
+
+- **/controllers** - Route handlers
+- **/models** - Mongoose schema models
+- **/config** - Configuration files
+- **/bin** - Script files for Heroku Scheduler to run
+
 <br />
 
 # **Screenshots**
@@ -127,13 +140,9 @@ npm run dev
 
 <br />
 
-# Routes
+# Wireframing and Entity Relationship Diagram
 
-# Wireframes and Entitey Relationship Diagram
-
-<img src="./public/images/BirthdayBuzz_HomePage.png" alt="HomePage" width="380" height="275"/>
-<img src="./public/images/BirthdayBuzz_FindPage.png" alt="HomePage" width="380" height="275"/>
-<img src="./public/images/BirthdayBuzz_Modeling.png" alt="HomePage" width="380" height="275"/>
+<img src="./public/images/BirthdayBuzz_Design&ERD.png" style="border-radius:5px" alt="Design & ERD" width="800" height="375"/>
 
 <br />
 
