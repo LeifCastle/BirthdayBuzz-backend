@@ -12,6 +12,7 @@ const client = require("twilio")(accountSid, authToken);
 
 // import the User model
 const { User } = require("../models");
+const { validateRequest } = require("twilio/lib/webhooks/webhooks");
 
 // Return all users
 router.get("/users", async (req, res) => {
@@ -26,42 +27,44 @@ router.get("/users", async (req, res) => {
 router.post("/verify", async (req, res) => {
   User.findOne({ email: req.body.email.toString() })
     .then((foundUser) => {
-      if (foundUser) {
-        console.log(
-          `Error, a user with the email ${foundUser.email} already exists`
-        );
-        res.json({
-          message: `Error, a user with the email ${foundUser.email} already exists`,
-          result: false,
-        });
-      } else {
-        client.verify.v2
-          .services(process.env.TWILIO_SERVICE)
-          .verifications.create({
-            channelConfiguration: {
-              template_id: "d-b4e407f4b23444378675cb13ad6f3231",
-              from: "birthday.buzzx@gmail.com",
-              from_name: "Birthday Buzz",
-            },
-            to: req.body.email.toString(),
-            channel: "email",
-          })
-          .then(() => {
-            console.log("Verification email sent to: ", req.body.email);
-            res.json({
-              message: `Verification email sent to: ${req.body.email}`,
-              result: true,
-            });
-          })
-          .catch((error) => {
-            console.log(`Error: ${error}`);
-            res.json({ message: `Error: verification not sent`, result: true });
-          });
-      }
+      userFound(foundUser);
     })
     .catch((error) => {
-      console.log(`Error checking for user: ${error}`);
+      userNotFound();
     });
+
+  function userNotFound() {
+    client.verify.v2
+      .services(process.env.TWILIO_SERVICE)
+      .verifications.create({
+        channelConfiguration: {
+          template_id: "d-b4e407f4b23444378675cb13ad6f3231",
+          from: "birthday.buzzx@gmail.com",
+          from_name: "Birthday Buzz",
+        },
+        to: req.body.email.toString(),
+        channel: "email",
+      })
+      .then(() => {
+        console.log("Verification email sent to: ", req.body.email);
+        return res.json({
+          message: `Verification email sent to: ${req.body.email}`,
+        });
+      })
+      .catch((error) => {
+        console.log(`Error: ${error}`);
+        return res
+          .status(401)
+          .send({ message: `Error: verification not sent` });
+      });
+  }
+
+  function userFound(foundUser) {
+    console.log(`${foundUser.email} is already registered`);
+    return res.status(401).send({
+      message: `${foundUser.email} is already registered`,
+    });
+  }
 });
 
 router.get("/checkVerify/:email/:code", async (req, res) => {
@@ -73,33 +76,26 @@ router.get("/checkVerify/:email/:code", async (req, res) => {
       code: req.params.code.toString(),
     })
     .then((verification_check) => {
-      console.log(`Verification SID check for: ${req.params.email}`);
       console.log(`Match is valid? ${verification_check.valid}`);
       if (verification_check.valid) {
         res.json({
           message: `Verification SID for: ${req.params.email} is valid`,
-          result: true,
         });
       } else {
-        res.json({
-          message: `Verification SID for: ${req.params.email} is invalid`,
-          result: false,
-        });
+        throw new error();
       }
     })
     .catch((error) => {
-      console.log(`Invalid code: ${error}`);
-      res.json({
-        message: "Invalid code:",
+      console.log(`Code does not match`);
+      res.status(401).send({
+        message: "Code does not match",
       });
     });
 });
 
 // POST - finding a user and returning the user
 router.post("/login", async (req, res) => {
-  console.log("POST to /login");
-  console.log("Login Request: ", req.body);
-  const foundUser = await User.findOne({ email: req.body.email }); //Change to verified phone number eventually
+  const foundUser = await User.findOne({ email: req.body.email });
   if (foundUser) {
     let isMatch = await bcrypt.compareSync(
       req.body.password,
@@ -113,15 +109,13 @@ router.post("/login", async (req, res) => {
         lastName: foundUser.lastName,
         birthday: foundUser.birthday,
         email: foundUser.email,
-        phone: foundUser.phone,
         password: foundUser.password,
-        public: foundUser.public,
       };
       jwt.sign(payload, JWT_SECRET, { expiresIn: 3600 }, (err, token) => {
         if (err) {
           res
-            .status(400)
-            .json({ message: "Session has time out, please log in again" });
+            .status(401)
+            .send({ message: "Session timed out, please log in again" });
         }
         const legit = jwt.verify(token, JWT_SECRET, { expiresIn: 60 });
         console.log("Verify: ", legit);
@@ -129,12 +123,10 @@ router.post("/login", async (req, res) => {
         res.json({ success: true, token: `Bearer ${token}`, userData: legit });
       });
     } else {
-      return res
-        .status(400)
-        .json({ message: "Email or Password is incorrect" });
+      return res.status(401).send({ message: "Email or Password incorrect" });
     }
   } else {
-    return res.status(400).json({ message: "User not found" });
+    return res.status(401).send({ message: "Email not registered" });
   }
 });
 
