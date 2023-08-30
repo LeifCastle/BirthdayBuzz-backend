@@ -68,6 +68,27 @@ app.post(
   }
 );
 
+//----Delete---- remove a person from your Buzz List
+app.delete("/buzzlist/:user/:id", (req, res) => {
+  console.log(
+    `${req.params.user} requests ${req.params.id} to be removed from their buzzlist`
+  );
+  User.updateOne(
+    { email: req.params.user },
+    {
+      $pull: { buzzList: { _id: req.params.id } },
+    }
+  )
+    .then((response) => {
+      console.log("Response: ", response);
+      res.json(response.acknowledged);
+    })
+    .catch((error) => {
+      console.log("Error removing entry from Buzz List: ", error);
+      res.json("Error removing entry from Buzz List");
+    });
+});
+
 app.use("/auth", require("./controllers/auth"));
 app.use("/account", require("./controllers/account"));
 
