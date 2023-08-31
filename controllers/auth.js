@@ -95,7 +95,7 @@ router.get("/checkVerify/:email/:code", async (req, res) => {
 
 // POST - finding a user and returning the user
 router.post("/login", async (req, res) => {
-  const foundUser = await User.findOne({ email: req.body.email });
+  const foundUser = await User.findOne({ email: req.body.email.toLowerCase() });
   if (foundUser) {
     let isMatch = await bcrypt.compareSync(
       req.body.password,
@@ -145,7 +145,7 @@ router.post("/signup", (req, res) => {
           firstName: req.body.firstName,
           lastName: req.body.lastName,
           birthday: req.body.birthday,
-          email: req.body.email,
+          email: req.body.email.toLowerCase(),
           password: req.body.password,
         });
 
