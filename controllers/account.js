@@ -10,134 +10,134 @@ const { JWT_SECRET } = process.env;
 // Import the User model
 const { User } = require("../models");
 
-// Profile Fetch
-router.get('/', passport.authenticate('jwt', { session: false }), (req, res) => {
-    console.log('====> inside /profile');
-    console.log(req.body);
-    console.log('====> user')
-    console.log(req.user);
-
-    // Extract only the necessary fields
-    const { 
-      id, firstName, lastName, email, birthday, phone, public, buzzList, public_buzzList_users 
-    } = req.user;
-  
-    // Send the extracted data
-    res.json({ 
-      id, firstName, lastName, email, birthday, phone, public, buzzList, public_buzzList_users 
-    });
-});
-
-
-
-router.put('/:id', (req, res) => {
-    const updateQuery = {}
-    // check firstName
-    if (req.body.firstName) {
-        updateQuery.firstName = req.body.firstName
-    }
-    // check lastName
-    if (req.body.lastName) {
-        updateQuery.lastName = req.body.lastName
-    }
-    // check birthday
-    if (req.body.birthday) {
-        updateQuery.birthday = req.body.birthday
-    }
-    // check email
-    if (req.body.email) {
-        updateQuery.email = req.body.email
-    }
-    // check phone
-    if (req.body.phone) {
-        updateQuery.phone = req.body.phone
-    }
-
-    User.findByIdAndUpdate(req.params.id, {$set: updateQuery }, {new: true})
-    .then((user) => {
-        return res.json({ message: `${user.email} was updated`, user: user});
+//--GET Profile
+router.get("/:email", (req, res) => {
+  User.find({ email: req.params.email })
+    .then((foundUser) => {
+      console.log("Found user: ", foundUser);
+      res.json(foundUser);
     })
     .catch((error) => {
-        console.log('error inside PUT /account/:id', error);
-        return res.json({ message: 'error occured, please try again.' });
+      console.log("Error finding user: ", error);
+      res.json("Error finding user: ");
     });
 });
 
-router.delete('/:id', (req, res) => {
-    User.findByIdAndDelete(req.params.id)
-    .then((user) => {
-        return res.json({ message: `${user.email} was deleted`});
+router.put("/edit/:email", (req, res) => {
+  const updateQuery = req.body;
+
+  User.updateOne(
+    { email: req.params.email },
+    { $set: updateQuery },
+    { new: true }
+  )
+    .then((updatedUser) => {
+      console.log("Updated User: ", updatedUser);
+      res.json({ message: `${updatedUser.email} was updated` });
     })
     .catch((error) => {
-        console.log('error inside DELETE /account/:id', error);
-        return res.json({ message: 'error occured, please try again.' });
+      console.log("error inside PUT /account/:id", error);
+      res.json({ message: "error occured, please try again." });
     });
 });
 
-router.get('/searchUsers', async (req, res) => {
-    const searchQuery = req.query.query;
-    console.log('searchQuery', searchQuery)
-  
-    if (!searchQuery) {
-      return res.status(400).json({ error: 'Query parameter is required.' });
+router.delete("/:id", (req, res) => {
+  User.findByIdAndDelete(req.params.id)
+    .then((user) => {
+      return res.json({ message: `${user.email} was deleted` });
+    })
+    .catch((error) => {
+      console.log("error inside DELETE /account/:id", error);
+      return res.json({ message: "error occured, please try again." });
+    });
+});
+
+router.get("/searchUsers", async (req, res) => {
+  const searchQuery = req.query.query;
+  console.log("searchQuery", searchQuery);
+
+  if (!searchQuery) {
+    return res.status(400).json({ error: "Query parameter is required." });
+  }
+
+  try {
+    const users = await User.find({
+      firstName: new RegExp(searchQuery, "i"),
+    });
+
+    res.json(users);
+  } catch (error) {
+    console.error("Error searching users:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+exports.addToBuzzlist = async (req, res) => {
+  const {
+    userIdToAdd,
+    relation,
+    reminderTimeFrame,
+    delivery_system,
+    message,
+    public,
+  } = req.body;
+
+  // Check if all required details are present
+  if (!userIdToAdd) {
+    return res
+      .status(400)
+      .json({ success: false, message: "Invalid user data provided." });
+  }
+
+  try {
+    // Fetch the user whose BuzzList will be updated
+    const user = await User.findById(req.user._id); // Assuming req.user._id contains the logged-in user's ID, which should be set by your authentication middleware
+
+    if (!user) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Logged-in user not found." });
     }
-  
-    try {
-      const users = await User.find({ 
-        firstName: new RegExp(searchQuery, 'i') 
-      });
-  
-      res.json(users);
-    } catch (error) {
-      console.error('Error searching users:', error);
-      res.status(500).json({ error: 'Internal Server Error' });
-    }
-  });
 
-  exports.addToBuzzlist = async (req, res) => {
-    const { userIdToAdd, relation, reminderTimeFrame, delivery_system, message, public } = req.body;
+    // Fetch the user data that will be added to the BuzzList
+    const userToAdd = await User.findById(userIdToAdd);
 
-    // Check if all required details are present
-    if (!userIdToAdd) {
-        return res.status(400).json({ success: false, message: "Invalid user data provided." });
+    if (!userToAdd) {
+      return res
+        .status(404)
+        .json({ success: false, message: "User to add not found." });
     }
 
-    try {
-        // Fetch the user whose BuzzList will be updated
-        const user = await User.findById(req.user._id); // Assuming req.user._id contains the logged-in user's ID, which should be set by your authentication middleware
+    // Create the BuzzList entry
+    const buzzListEntry = {
+      name: `${userToAdd.firstName} ${userToAdd.lastName}`,
+      birthday: userToAdd.birthday,
+      relation,
+      reminderTimeFrame,
+      delivery_system,
+      message,
+      public,
+    };
 
-        if (!user) {
-            return res.status(404).json({ success: false, message: "Logged-in user not found." });
-        }
+    // Add to the user's BuzzList
+    user.buzzList.push(buzzListEntry);
+    await user.save();
 
-        // Fetch the user data that will be added to the BuzzList
-        const userToAdd = await User.findById(userIdToAdd);
-
-        if (!userToAdd) {
-            return res.status(404).json({ success: false, message: "User to add not found." });
-        }
-
-        // Create the BuzzList entry
-        const buzzListEntry = {
-            name: `${userToAdd.firstName} ${userToAdd.lastName}`,
-            birthday: userToAdd.birthday,
-            relation,
-            reminderTimeFrame,
-            delivery_system,
-            message,
-            public
-        };
-
-        // Add to the user's BuzzList
-        user.buzzList.push(buzzListEntry);
-        await user.save();
-
-        res.json({ success: true, message: "User added to the BuzzList successfully.", buzzList: user.buzzList });
-
-    } catch (error) {
-        console.error(`Error in /addToBuzzlist: ${error.message}`);
-        res.status(500).json({ success: false, message: "Server Error." });
-    }
+    res.json({
+      success: true,
+      message: "User added to the BuzzList successfully.",
+      buzzList: user.buzzList,
+    });
+  } catch (error) {
+    console.error(`Error in /addToBuzzlist: ${error.message}`);
+    res.status(500).json({ success: false, message: "Server Error." });
+  }
 };
-  
+
+//Correct way to auth?
+// router.get(
+//     "/:email",
+//     passport.authenticate("jwt", { session: false }),
+//     (req, res) => {
+
 module.exports = router;
