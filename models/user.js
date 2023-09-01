@@ -21,6 +21,8 @@ const userSchema = new mongoose.Schema(
     lastName: String,
     birthday: String,
     email: String,
+    buzzTime: String,
+    timezone: String,
     password: { type: String, required: true },
     buzzList: [buzzListSchema],
     public_buzzList_users: Array,

@@ -147,6 +147,8 @@ router.post("/signup", (req, res) => {
           birthday: req.body.birthday,
           email: req.body.email.toLowerCase(),
           password: req.body.password,
+          buzzTime: "5AM",
+          timezone: "UTC",
         });
 
         // Salt and hash the password - before saving the user

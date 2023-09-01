@@ -23,6 +23,7 @@ router.get("/:email", (req, res) => {
     });
 });
 
+//--PUT Updating Userr Account details
 router.put("/edit/:email", (req, res) => {
   const updateQuery = req.body;
 
@@ -34,6 +35,34 @@ router.put("/edit/:email", (req, res) => {
     .then((updatedUser) => {
       console.log("Updated User: ", updatedUser);
       res.json({ message: `${updatedUser.email} was updated` });
+    })
+    .catch((error) => {
+      console.log("error inside PUT /account/:id", error);
+      res.json({ message: "error occured, please try again." });
+    });
+});
+
+//--PUT Updating Buzz Time details
+router.put("/buzztime/:email", (req, res) => {
+  console.log(req.params.email, "requests the following update", req.body);
+  User.updateOne({ email: req.params.email }, { $set: req.body }, { new: true })
+    .then((updatedUser) => {
+      console.log("Updated User: ", updatedUser);
+      res.json({ message: `${updatedUser.email}'s Buzz Time was updated` });
+    })
+    .catch((error) => {
+      console.log("error inside PUT /account/:id", error);
+      res.json({ message: "error occured, please try again." });
+    });
+});
+
+//--PUT Updating timezone (Combine with above PUT Route in the future?)
+router.put("/timezone/:email", (req, res) => {
+  console.log(req.params.email, "requests the following update", req.body);
+  User.updateOne({ email: req.params.email }, { $set: req.body }, { new: true })
+    .then((updatedUser) => {
+      console.log("Updated User: ", updatedUser);
+      res.json({ message: `${updatedUser.email}'s Buzz Time was updated` });
     })
     .catch((error) => {
       console.log("error inside PUT /account/:id", error);
