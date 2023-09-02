@@ -6,13 +6,14 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const { JWT_SECRET } = process.env;
 
-const accountSid = process.env.TWILIO_ACCOUNT_SID;
-const authToken = process.env.TWILIO_AUTH_TOKEN;
-const client = require("twilio")(accountSid, authToken);
+const { CourierClient } = require("@trycourier/courier");
+const courier = CourierClient({
+  authorizationToken: process.env.COURIER_API_KEY,
+});
+let verificationCode;
 
 // import the User model
 const { User } = require("../models");
-const { validateRequest } = require("twilio/lib/webhooks/webhooks");
 
 // Return all users
 router.get("/users", async (req, res) => {
@@ -24,73 +25,73 @@ router.get("/users", async (req, res) => {
   }
 });
 
+function generateVerificationCode() {
+  let numbers = [];
+  for (let i = 0; i < 4; i++) {
+    numbers.push(Math.floor(Math.random() * 10));
+  }
+  return parseInt(numbers.join(""));
+}
+
 router.post("/verify", async (req, res) => {
   User.findOne({ email: req.body.email.toString() })
     .then((foundUser) => {
-      userFound(foundUser);
-    })
-    .catch((error) => {
-      userNotFound();
-    });
-
-  function userNotFound() {
-    client.verify.v2
-      .services(process.env.TWILIO_SERVICE)
-      .verifications.create({
-        channelConfiguration: {
-          template_id: "d-b4e407f4b23444378675cb13ad6f3231",
-          from: "birthday.buzzx@gmail.com",
-          from_name: "Birthday Buzz",
-        },
-        to: req.body.email.toString(),
-        channel: "email",
-      })
-      .then(() => {
-        console.log("Verification email sent to: ", req.body.email);
-        return res.json({
-          message: `Verification email sent to: ${req.body.email}`,
-        });
-      })
-      .catch((error) => {
-        console.log(`Error: ${error}`);
-        return res
-          .status(401)
-          .send({ message: `Error: verification not sent` });
+      console.log(`${foundUser.email} is already registered`);
+      return res.status(401).send({
+        message: `${foundUser.email} is already registered`,
       });
-  }
-
-  function userFound(foundUser) {
-    console.log(`${foundUser.email} is already registered`);
-    return res.status(401).send({
-      message: `${foundUser.email} is already registered`,
+    })
+    .catch(async (error) => {
+      // Generate a verification code and print it to the console.
+      verificationCode = generateVerificationCode();
+      console.log(verificationCode);
+      // Send verification email
+      const requestId = await courier.send({
+        message: {
+          to: {
+            email: req.body.email.toString(),
+          },
+          content: {
+            title: "Welcome!",
+            body: `Thanks for signing up!  Your verification code is ${verificationCode}`,
+          },
+          data: {
+            name: "Feature comming soon",
+          },
+          routing: {
+            method: "single",
+            channels: ["email"],
+          },
+        },
+      });
+      if (requestId) {
+        console.log("Verification code sent to", req.body.email.toString());
+        res
+          .status(202)
+          .send(`Verification code sent to ${req.body.email.toString()}`);
+      } else {
+        console.log("Request Id: ", requestId);
+        res.status(401).send({ message: "Verification code not sent..." });
+      }
     });
-  }
 });
 
 router.get("/checkVerify/:email/:code", async (req, res) => {
-  console.log(`Code: ${req.params.code.toString()}`);
-  client.verify.v2
-    .services(process.env.TWILIO_SERVICE)
-    .verificationChecks.create({
-      to: req.params.email.toString(),
-      code: req.params.code.toString(),
-    })
-    .then((verification_check) => {
-      console.log(`Match is valid? ${verification_check.valid}`);
-      if (verification_check.valid) {
-        res.json({
-          message: `Verification SID for: ${req.params.email} is valid`,
-        });
-      } else {
-        throw new error();
-      }
-    })
-    .catch((error) => {
-      console.log(`Code does not match`);
-      res.status(401).send({
-        message: "Code does not match",
+  console.log(`Code: ${parseInt(req.params.code)}, Match: ${verificationCode}`);
+  try {
+    if (parseInt(req.params.code) === verificationCode) {
+      res.json({
+        message: `Verification SID for: ${req.params.email} is valid`,
       });
+    } else {
+      throw new error();
+    }
+  } catch (error) {
+    console.log(`Code does not match`);
+    res.status(401).send({
+      message: "Code does not match",
     });
+  }
 });
 
 // POST - finding a user and returning the user
