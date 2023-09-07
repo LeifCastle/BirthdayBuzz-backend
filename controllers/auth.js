@@ -148,7 +148,7 @@ router.post("/signup", (req, res) => {
           birthday: req.body.birthday,
           email: req.body.email.toLowerCase(),
           password: req.body.password,
-          buzzTime: "5AM",
+          buzzTime: ["8", "30", "AM"],
           timezone: "UTC",
         });
 
