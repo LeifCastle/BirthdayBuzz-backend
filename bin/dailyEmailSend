@@ -1,20 +1,24 @@
 #! /app/.heroku/node/bin/node
 
+const moment = require("moment-timezone");
 const dotenv = require("dotenv");
 dotenv.config({ path: "../.env" });
-const sgMail = require("@sendgrid/mail");
 const { User } = require("../models");
-
-sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+const { CourierClient } = require("@trycourier/courier");
+const courier = CourierClient({
+  authorizationToken: process.env.COURIER_API_KEY,
+});
 
 function getUsers() {
-  const today = new Date().toLocaleDateString().slice(0, -5);
-  console.log("Current Date: ", today);
+  const currentDate = new Date();
+  const timestamp = currentDate.toUTCString();
+  let today = moment.tz(timestamp, "UTC").format("M/DD");
+  console.log("Today's Date: ", today);
   User.find()
     .then((allUsers) => {
       allUsers.forEach((user) => {
         console.log(
-          `In User: ${user.firstName} ${user.lastName} local timezone is ${user.timezone} requested Buzz Time is ${user.buzzTime}`
+          `${user.firstName} ${user.lastName} local timezone is ${user.timezone} requested Buzz Time is ${user.buzzTime}`
         );
         user.buzzList.forEach((entry) => {
           let endSlice = entry.birthday.slice(0, -5);
@@ -22,39 +26,54 @@ function getUsers() {
           console.log(`${entry.name}'s birthday is on ${beginSlice}`);
           if (beginSlice === today) {
             console.log(`--Birthday Match`);
-            console.log(`Send reminder at ${user.buzzTime} ${user.timezone}`);
+            console.log(
+              `Send reminder at ${user.buzzTime[0]}:${user.buzzTime[1]} ${user.buzzTime[2]} ${user.timezone}`
+            );
 
-            //Create a new Date for correct time to send email
-            const currentDate = new Date();
-            let hours;
-            switch (user.timezone) {
-              case "UTC":
-                hours = user.buzzTime;
-                break;
-              case "EST":
-                hours = user.buzzTime + 5;
-                break;
-              case "CST":
-                hours = user.buzzTime + 6;
-                break;
-              case "MST":
-                hours = user.buzzTime + 7;
-                break;
-              case "PST":
-                hours = user.buzzTime + 8;
-                break;
+            //Hour to send email at
+            let sendHour = user.buzzTime[0];
+            let minutes = user.buzzTime[1];
+            if (sendHour === "12" && user.buzzTime[2] === "AM") {
+              sendHour = "0";
             }
-            currentDate.setHours(hours);
-            currentDate.setMinutes(44);
-            // Convert the current date to a Unix timestamp
-            const unixTimestamp = Math.floor(currentDate.getTime() / 1000);
-            console.log("TS", unixTimestamp);
-            sendScheduledEmail(
-              user.email,
-              user.firstName,
-              entry.message,
-              unixTimestamp
-            ); //Need to also pass user time of day sending preference as a parameter
+            if (user.buzzTime[2] === "PM" && sendHour !== "12") {
+              sendHour = `${parseInt(sendHour) + 12}`;
+            }
+            let userTime = `${sendHour}:${minutes}`;
+            console.log("Formated Time Request: ", userTime);
+
+            //Timezone
+            let userTimezone = user.timezone;
+            let timezoneH = {
+              UTC: moment.tz(timestamp, "UTC").format("H"),
+              EST: moment.tz(timestamp, "America/New_York").format("H"),
+              CST: moment.tz(timestamp, "America/Chicago").format("H"),
+              MST: moment.tz(timestamp, "America/Denver").format("H"),
+              PST: moment.tz(timestamp, "America/Los_Angeles").format("H"),
+            };
+            let timezoneM = {
+              UTC: moment.tz(timestamp, "UTC").format("m"),
+              EST: moment.tz(timestamp, "America/New_York").format("m"),
+              CST: moment.tz(timestamp, "America/Chicago").format("m"),
+              MST: moment.tz(timestamp, "America/Denver").format("m"),
+              PST: moment.tz(timestamp, "America/Los_Angeles").format("m"),
+            };
+
+            //Timezone defined hour to send email at
+            let currentHour = timezoneH[userTimezone];
+            let currentMinute = timezoneM[userTimezone];
+            let delay = sendHour - currentHour;
+            let msDelay =
+              delay * 3600000 + minutes * 60000 - currentMinute * 60000;
+            console.log("Delay (ms):", msDelay);
+            if (msDelay > 0) {
+              sendScheduledEmail(
+                user.email,
+                user.firstName,
+                entry.message,
+                msDelay
+              );
+            }
           }
         });
       });
@@ -63,29 +82,32 @@ function getUsers() {
       console.log("Error finding all users: ", error);
     });
 }
-
-async function sendScheduledEmail(address, name, message, unixTimestamp) {
-  const data = {
-    from: {
-      email: "birthday.buzzx@gmail.com",
-      name: "Birthday Buzz",
-    },
-    to: [
-      {
+//parseInt(unixTimestamp)
+async function sendScheduledEmail(address, name, message, delay) {
+  const response = await courier.send({
+    message: {
+      to: {
         email: address,
+      },
+      content: {
+        title: "Birthday Reminder!",
+        body: message,
+      },
+      data: {
         name: name,
       },
-    ],
-    subject: "Birthday Reminder!", //Future Feature: Let user customize this
-    text: message,
-    send_at: parseInt(unixTimestamp),
-  };
-
-  const response = await sgMail.send(data);
-  if (response[0].statusCode === 202) {
+      routing: {
+        method: "single",
+        channels: ["email"],
+      },
+      delay: { duration: delay },
+    },
+  });
+  console.log("Response: ", response);
+  if (response.requestId) {
     console.log("Email scheduled successfully!");
   } else {
-    console.log("Error --> Status Code: ", response[0].statusCode);
+    console.log("Error: ", response);
   }
 }
 
