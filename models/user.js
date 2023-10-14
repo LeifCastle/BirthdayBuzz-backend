@@ -17,8 +17,7 @@ const buzzListSchema = new mongoose.Schema(
 // User schema
 const userSchema = new mongoose.Schema(
   {
-    firstName: String,
-    lastName: String,
+    name: String,
     birthday: String,
     email: String,
     buzzTime: Array,

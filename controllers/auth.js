@@ -102,7 +102,7 @@ router.post("/login", async (req, res) => {
       req.body.password,
       foundUser.password
     );
-    console.log("Does the passwords match?", isMatch);
+    console.log("Does the password match?", isMatch);
     if (isMatch) {
       const payload = {
         id: foundUser.id,
@@ -143,8 +143,7 @@ router.post("/signup", (req, res) => {
       } else {
         // Create a new user
         const newUser = new User({
-          firstName: req.body.firstName,
-          lastName: req.body.lastName,
+          name: req.body.name,
           birthday: req.body.birthday,
           email: req.body.email.toLowerCase(),
           password: req.body.password,
