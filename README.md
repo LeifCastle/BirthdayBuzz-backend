@@ -29,7 +29,7 @@ Never forget another birthday! Birthday Buzz is a MERN stack application that se
 
 # Deployment
 
-- Frontend deployed online at [BirthdayBuzz](http://www.birthdaybuz.net)
+- Frontend deployed online at [BirthdayBuzz](https://birthdaybuzz.io)
 - Backend deployed on [Heroku](https://birthday-buzz-backend-85f63d7d1452.herokuapp.com/)
 - Frontend Github Repo [Github](https://github.com/LeifCastle/BirthdayBuzz-frontend)
 - Backend Github Repo [Github](https://github.com/LeifCastle/BirthdayBuzz-backend)
