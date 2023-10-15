@@ -181,6 +181,39 @@ router.post("/signup", (req, res) => {
     });
 });
 
+// PUT ---- signing up a guest user (just replaces guest with personal info to keep possible account data)
+router.put("/guestSignup", (req, res) => {
+  console.log("Update request:", req.body);
+  //--Hash Password
+  bcrypt.genSalt(10, (err, salt) => {
+    if (err) throw Error;
+    bcrypt.hash(req.body.password, salt, (err, hash) => {
+      if (err) console.log("==> Error inside of hash", err);
+      User.updateOne(
+        { email: req.body.oldEmail },
+        {
+          $set: {
+            name: req.body.name,
+            birthday: req.body.birthday,
+            email: req.body.email,
+            password: hash,
+          },
+        }
+      )
+        .then((success) => {
+          console.log("Updated user", success);
+          res.json("Success");
+        })
+        .catch((error) => {
+          console.log("Error updated user", error);
+          return res
+            .status(401)
+            .send({ message: "Error transferring guest account" });
+        });
+    });
+  });
+});
+
 module.exports = router;
 
 //----------------------------------------------------Template's code for updating a user
